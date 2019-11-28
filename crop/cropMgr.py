@@ -115,8 +115,8 @@ class CropMgr(object):
             # 跳过已有区域
             if imageTool.inSkipRegion(pos, skip_region):
                 continue
-            print(pos)
-            if pos[0] == 60 and pos[1] == 45:
+            # print(pos)
+            if pos[0] == 473 and pos[1] == 0:
                 a = 1
                 pass
             range_arr = imageTool.getImageRange(pos, tow_data, row_Max, col_Max)
@@ -136,7 +136,8 @@ class CropMgr(object):
 
 
 cropMgr = CropMgr()
-cropMgr.AutoCropIrregularity("不规则.png")
+cropMgr.AutoCropIrregularity("activity.png")
+# cropMgr.AutoCropIrregularity("activity.png")
     
 
     

@@ -1,6 +1,6 @@
 import sys
 # 避免递归达到1000上限
-sys.setrecursionlimit(9000000)
+sys.setrecursionlimit(90000000)
 
 
 
@@ -106,51 +106,60 @@ class ImageTool(object):
     # data ： 像素数据(二维)
     # pass_pos ： 跳过的点
     # range_arr ： 截图范围
-    def checkPosAround(self, pos, data, row_Max, col_Max, pass_pos, range_arr):
-        # 是否跳过
-        key = "%d,%d"%(pos[0],pos[1])
-        if key in pass_pos:
-            return False
-        # 是否有效点,超出图片范围
-        if pos[0] < 0 or pos[1] < 0 or pos[0] >= row_Max or pos[1] >= col_Max:
-            return False
-        # 加入跳过的点
-        pass_pos[key] = 1
-        # 是否有效像素
-        if not self.checkPixel(data[pos[0]][pos[1]]):
-            return False
-        # 刷新range_arr
-        if pos[0] < range_arr[0]:
-            range_arr[0] = pos[0]
-        if pos[1] < range_arr[1]:
-            range_arr[1] = pos[1]
-        if pos[0] > range_arr[2]:
-            range_arr[2] = pos[0]
-        if pos[1] > range_arr[3]:
-            range_arr[3] = pos[1]
-        # 遍历周围，发展下线
-        self.checkPosAround([pos[0]-1, pos[1]-1], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0], pos[1]-1], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0]+1, pos[1]-1], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0]-1, pos[1]], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0]+1, pos[1]], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0]-1, pos[1]+1], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0], pos[1]+1], data, row_Max, col_Max, pass_pos, range_arr)
-        self.checkPosAround([pos[0]+1, pos[1]+1], data, row_Max, col_Max, pass_pos, range_arr)
-
-        return True
+    # find_pos ： 需要查找的点
+    def checkPosAround(self, pos, data, row_Max, col_Max, pass_pos, range_arr, find_pos):
+        # 遍历每个需要查找的点
+        next_pos = []
+        for tmp_pos in find_pos:
+            # 是否跳过
+            if tmp_pos in pass_pos:
+                continue
+            # 加入跳过的点
+            pass_pos.append(tmp_pos)
+            # 是否有效点,超出图片范围
+            if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_Max or tmp_pos[1] >= col_Max:
+                continue
+            # 是否有效像素
+            if not self.checkPixel(data[tmp_pos[0]][tmp_pos[1]]):
+                continue
+            # 刷新range_arr
+            if tmp_pos[0] < range_arr[0]:
+                range_arr[0] = tmp_pos[0]
+            if tmp_pos[1] < range_arr[1]:
+                range_arr[1] = tmp_pos[1]
+            if tmp_pos[0] > range_arr[2]:
+                range_arr[2] = tmp_pos[0]
+            if tmp_pos[1] > range_arr[3]:
+                range_arr[3] = tmp_pos[1]
+            # 遍历周围，发展下线
+            next_pos.append([tmp_pos[0]-1, tmp_pos[1]-1])
+            next_pos.append([tmp_pos[0], tmp_pos[1]-1])
+            next_pos.append([tmp_pos[0]+1, tmp_pos[1]-1])
+            next_pos.append([tmp_pos[0]-1, tmp_pos[1]])
+            next_pos.append([tmp_pos[0]+1, tmp_pos[1]])
+            next_pos.append([tmp_pos[0]-1, tmp_pos[1]+1])
+            next_pos.append([tmp_pos[0], tmp_pos[1]+1])
+            next_pos.append([tmp_pos[0]+1, tmp_pos[1]+1])
+        return next_pos
 
     # 获取起始处开始的有效像素行
     # pos ： 起始点
     # data ： 像素数据(二维)
     def getImageRange(self, pos, data, row_Max, col_Max):
-        # 已经找过的点 ["x,y"], {"x,y" = 1}后者比较省查找时间
-        pass_pos = {}
-        # 截图范围  
-        range_arr = [pos[0],pos[1],pos[0],pos[1]]
-        # 遍历和它相接的点
-        if self.checkPosAround([pos[0], pos[1]], data, row_Max, col_Max, pass_pos, range_arr):
-            return range_arr 
+        # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
+        pass_pos = []
+        range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围  
+        # key = "%d,%d"%(pos[0],pos[1])
+        find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
+
+        while True:
+            ret_pos = self.checkPosAround([pos[0], pos[1]], data, row_Max, col_Max, pass_pos, range_arr, find_pos)
+            if len(ret_pos) == 0:
+                break
+            find_pos = ret_pos
+        
+        if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
+            return range_arr
         return None
 
 imageTool = ImageTool()
