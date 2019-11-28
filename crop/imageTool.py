@@ -112,10 +112,12 @@ class ImageTool(object):
         next_pos = []
         for tmp_pos in find_pos:
             # 是否跳过
-            if tmp_pos in pass_pos:
+            key = "%d,%d"%(tmp_pos[0],tmp_pos[1])
+            if key in pass_pos:
                 continue
             # 加入跳过的点
-            pass_pos.append(tmp_pos)
+            pass_pos[key] = 1
+            # pass_pos.append(tmp_pos)
             # 是否有效点,超出图片范围
             if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_Max or tmp_pos[1] >= col_Max:
                 continue
@@ -132,22 +134,39 @@ class ImageTool(object):
             if tmp_pos[1] > range_arr[3]:
                 range_arr[3] = tmp_pos[1]
             # 遍历周围，发展下线
-            next_pos.append([tmp_pos[0]-1, tmp_pos[1]-1])
-            next_pos.append([tmp_pos[0], tmp_pos[1]-1])
-            next_pos.append([tmp_pos[0]+1, tmp_pos[1]-1])
-            next_pos.append([tmp_pos[0]-1, tmp_pos[1]])
-            next_pos.append([tmp_pos[0]+1, tmp_pos[1]])
-            next_pos.append([tmp_pos[0]-1, tmp_pos[1]+1])
-            next_pos.append([tmp_pos[0], tmp_pos[1]+1])
-            next_pos.append([tmp_pos[0]+1, tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0], tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0], tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]+1])
         return next_pos
+    # 上面专用
+    # next_pos ： 加入数组
+    # pass_pos ： 跳过的点
+    # pos ： 加入的点
+    def checkPosAround_addPos(self, next_pos, pass_pos, pos):
+        key = "%d,%d"%(pos[0],pos[1])
+        if key in pass_pos:
+            return
+        next_pos.append(pos)
 
     # 获取起始处开始的有效像素行
     # pos ： 起始点
     # data ： 像素数据(二维)
     def getImageRange(self, pos, data, row_Max, col_Max):
         # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
-        pass_pos = []
+        pass_pos = {}
         range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围  
         # key = "%d,%d"%(pos[0],pos[1])
         find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}

@@ -109,16 +109,10 @@ class CropMgr(object):
         skip_region = []    # 跳过的区域,同时也是截取的范围
         for idx in range(0,data_len):
             pos = [idx%row_Max, idx//row_Max]
-            # # 跳过空白
-            # if not imageTool.checkPixel(data[idx]):
-            #     continue
             # 跳过已有区域
             if imageTool.inSkipRegion(pos, skip_region):
                 continue
             # print(pos)
-            if pos[0] == 473 and pos[1] == 0:
-                a = 1
-                pass
             range_arr = imageTool.getImageRange(pos, tow_data, row_Max, col_Max)
             if range_arr:
                 skip_region.append(range_arr)
