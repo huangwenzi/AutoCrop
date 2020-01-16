@@ -3,17 +3,7 @@ import sys
 sys.setrecursionlimit(90000000)
 
 
-# 周围八点
-_around_pos = [
-    [-1, -1],
-    [-1, 0],
-    [-1, +1],
-    [0, +1],
-    [+1, +1],
-    [+1, 0],
-    [+1, -1],
-    [0, -1],
-]
+
 
 # 图片处理工具
 class ImageTool(object):
@@ -30,15 +20,6 @@ class ImageTool(object):
     # data ： 像素数据
     def checkPixel(self, tmp): 
         if (tmp[0] == 0 and tmp[1] == 0 and tmp[2] == 0) or tmp[3] == 0 :
-            return False
-        return True
-    # 判断是否有像素点(加范围判断)
-    # data ： 像素数据
-    def checkPixelAndRange(self, pixel, tmp_pos, row_Max, col_Max): 
-        # 是否有效点,超出图片范围
-        if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_Max or tmp_pos[1] >= col_Max:
-            return False
-        if (pixel[0] == 0 and pixel[1] == 0 and pixel[2] == 0) or pixel[3] == 0 :
             return False
         return True
 
@@ -153,16 +134,22 @@ class ImageTool(object):
             if tmp_pos[1] > range_arr[3]:
                 range_arr[3] = tmp_pos[1]
             # 遍历周围，发展下线
-            for tmp_around in _around_pos:
-                self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]-1])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]-1])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]-1])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]+1])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]+1])
-            # self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0], tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]-1])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]])
+            # next_pos.append([tmp_pos[0]-1, tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0], tmp_pos[1]+1])
+            # next_pos.append([tmp_pos[0]+1, tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]-1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]-1, tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0], tmp_pos[1]+1])
+            self.checkPosAround_addPos(next_pos, pass_pos, [tmp_pos[0]+1, tmp_pos[1]+1])
         return next_pos
     # 上面专用
     # next_pos ： 加入数组
@@ -174,7 +161,7 @@ class ImageTool(object):
             return
         next_pos.append(pos)
 
-    # 获取起始处开始的有效像素行(单点扩散)
+    # 获取起始处开始的有效像素行
     # pos ： 起始点
     # data ： 像素数据(二维)
     def getImageRange(self, pos, data, row_Max, col_Max):
@@ -189,65 +176,6 @@ class ImageTool(object):
             if len(ret_pos) == 0:
                 break
             find_pos = ret_pos
-        
-        if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
-            return range_arr
-        return None
-
-    # 获取相对的位置
-    def getPosIdx(self, idx):
-        return (idx+4)%8
-
-    # 获取起始处开始的有效像素行(描边)
-    # pos ： 起始点
-    # data ： 像素数据(二维)
-    def getImageRange_1(self, pos, data, row_Max, col_Max):
-        range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围
-        tmp_pos = [pos[0], pos[1]]  # 当前点
-        begin_idx = 0 # 开始的相对角度
-
-        # 检查是否有效点
-        # 是否有效点,超出图片范围
-        if not self.checkPixelAndRange(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_Max, col_Max):
-            return None
-
-        # 循环一周
-        while True:
-            # 主要逻辑
-            # 查找周围的有效像素点,顺序很重要
-            eff_pos = []
-            for tmp_idx in range(8):
-                # (idx+4)%8
-                around_idx = (begin_idx+tmp_idx)%8 # 周围点idx
-                tmp_around = _around_pos[around_idx]
-                check_pos = [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]]
-                # 是否有效点,超出图片范围
-                if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_Max or check_pos[1] >= col_Max:
-                    continue
-                if self.checkPixelAndRange(data[check_pos[0]][check_pos[1]], check_pos, row_Max, col_Max):
-                    add_pos_info = {"pos":check_pos, "idx":around_idx}
-                    eff_pos.append(add_pos_info)
-            # print(eff_pos)
-            # 如果小于等于零退出
-            if len(eff_pos) <= 0:
-                return None
-
-            # 刷新range_arr
-            if tmp_pos[0] < range_arr[0]:
-                range_arr[0] = tmp_pos[0]
-            if tmp_pos[1] < range_arr[1]:
-                range_arr[1] = tmp_pos[1]
-            if tmp_pos[0] > range_arr[2]:
-                range_arr[2] = tmp_pos[0]
-            if tmp_pos[1] > range_arr[3]:
-                range_arr[3] = tmp_pos[1]
-
-            # 查找下一个点
-            tmp_pos = eff_pos[0]["pos"]
-            begin_idx = eff_pos[0]["idx"] + 5
-            # 判断是否一周
-            if tmp_pos[0] == pos[0] and tmp_pos[1] == pos[1]:
-                break
         
         if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
             return range_arr

@@ -1,5 +1,4 @@
 from PIL import Image
-import time
 
 
 from imageTool import imageTool as imageTool
@@ -94,9 +93,8 @@ class CropMgr(object):
                 im_crop = im1.crop(box)
                 im_crop.save(save_path)
         
-    # 不规则切图(单点扩散)
+    # 不规则切图
     def AutoCropIrregularity(self, image_path):
-        begin_time = time.time()
         im1 = Image.open(image_path)
         im1 = im1.convert('RGBA')
         data = im1.getdata()
@@ -124,48 +122,16 @@ class CropMgr(object):
             save_path = "./crop/image/%s_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
             im_crop = im1.crop(tmp_region)
             im_crop.save(save_path)
-        end_time = time.time()
-        print("AutoCropIrregularity %s consume:%f"%(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), end_time - begin_time))
-
-    # 不规则切图(描边算法)
-    def AutoCropIrregularity_1(self, image_path):
-        begin_time = time.time()
-        im1 = Image.open(image_path)
-        im1 = im1.convert('RGBA')
-        data = im1.getdata()
-        data = list(data)
-        data_len = len(data)
-        row_Max = im1.size[0]
-        col_Max = im1.size[1]
-        image_name = imageTool.getImageName(image_path)
-        tow_data = imageTool.dataToTwoArr(data, row_Max)
+                
     
-        # 遍历每个像素点
-        skip_region = []    # 跳过的区域,同时也是截取的范围
-        for idx in range(0,data_len):
-            pos = [idx%row_Max, idx//row_Max]
-            # 跳过已有区域
-            if imageTool.inSkipRegion(pos, skip_region):
-                continue
-            # print(pos)
-            range_arr = imageTool.getImageRange_1(pos, tow_data, row_Max, col_Max)
-            if range_arr:
-                skip_region.append(range_arr)
+        
 
-        # 保存图片
-        a = 1
-        for tmp_region in skip_region:
-            save_path = "./crop/image/%s_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
-            im_crop = im1.crop(tmp_region)
-            im_crop.save(save_path)
-        end_time = time.time()
-        print("AutoCropIrregularity_1 %s consume:%f"%(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), end_time - begin_time))
 
 
 
 cropMgr = CropMgr()
 cropMgr.AutoCropIrregularity("activity.png")
-cropMgr.AutoCropIrregularity_1("activity.png")
+# cropMgr.AutoCropIrregularity("activity.png")
     
 
     
