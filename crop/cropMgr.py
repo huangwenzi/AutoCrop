@@ -152,8 +152,9 @@ class CropMgr(object):
             if range_arr:
                 skip_region.append(range_arr)
 
+        skip_region = imageTool.merge_image_range(skip_region)
+        
         # 保存图片
-        a = 1
         for tmp_region in skip_region:
             save_path = "./crop/image/%s_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
             im_crop = im1.crop(tmp_region)
@@ -164,7 +165,7 @@ class CropMgr(object):
 
 
 cropMgr = CropMgr()
-cropMgr.AutoCropIrregularity("activity.png")
+# cropMgr.AutoCropIrregularity("activity.png")
 cropMgr.AutoCropIrregularity_1("activity.png")
     
 
