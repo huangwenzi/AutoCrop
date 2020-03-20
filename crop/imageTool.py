@@ -21,7 +21,8 @@ class ImageTool(object):
 
     # 获取图片名
     def getImageName(self, path):
-        begin_idx = path.rfind("/")
+        # begin_idx = path.rfind("/")
+        begin_idx = path.rfind("\\")
         end_idx = path.rfind(".")
         name = path[begin_idx + 1 : end_idx]
         return name
@@ -39,6 +40,8 @@ class ImageTool(object):
         if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_Max or tmp_pos[1] >= col_Max:
             return False
         if (pixel[0] == 0 and pixel[1] == 0 and pixel[2] == 0) or pixel[3] == 0 :
+            return False
+        if (pixel[0] == 255 and pixel[1] == 255 and pixel[2] == 255) or pixel[3] == 0 :
             return False
         return True
 
@@ -249,7 +252,7 @@ class ImageTool(object):
             if tmp_pos[0] == pos[0] and tmp_pos[1] == pos[1]:
                 break
         
-        if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
+        if range_arr[0] != range_arr[2] and range_arr[1] != range_arr[3]:
             return range_arr
         return None
 

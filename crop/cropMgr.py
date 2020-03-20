@@ -1,6 +1,7 @@
 from PIL import Image
 import time
-
+import os
+import platform
 
 from imageTool import imageTool as imageTool
 
@@ -153,20 +154,45 @@ class CropMgr(object):
                 skip_region.append(range_arr)
 
         skip_region = imageTool.merge_image_range(skip_region)
-        
+
         # 保存图片
+        save_dir_path = "./处理完毕/%s"%(image_name)
+        if not os.path.exists(save_dir_path):
+            os.makedirs(save_dir_path)
+            
         for tmp_region in skip_region:
-            save_path = "./crop/image/%s_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
+            save_path = "%s/%s_%d_%d.png"%(save_dir_path, image_name, tmp_region[0], tmp_region[1])
+            print(save_path)
+            if save_path == "./处理完毕/city_1/city_1_170_592.png":
+                a = 1
             im_crop = im1.crop(tmp_region)
             im_crop.save(save_path)
         end_time = time.time()
         print("AutoCropIrregularity_1 %s consume:%f"%(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), end_time - begin_time))
 
+    # 通过目录地址获取文件列表
+    def get_file_name_by_dir(self, dirname):
+        file_list = []
+        for root, dirs, files in os.walk(dirname, topdown=False):
+            for name in files:
+                tmp_file_path = os.path.join(root, name)
+                file_list.append(self.unite_path(tmp_file_path))
+        return file_list
+    
+    # 统一路径格式
+    def unite_path(self, tmp_path):
+        # if platform.system() == "Windows" :
+        #     return tmp_path.replace('/', '\\')
+        return tmp_path
 
 
 cropMgr = CropMgr()
 # cropMgr.AutoCropIrregularity("activity.png")
-cropMgr.AutoCropIrregularity_1("activity.png")
-    
+# cropMgr.AutoCropIrregularity_1("activity.png")
+# cropMgr.AutoCropIrregularity_1("city_1.jpg")
+# cropMgr.AutoCropIrregularity_1("city.jpg")
 
-    
+# 目录批量处理
+file_list = cropMgr.get_file_name_by_dir("./需要处理")
+for tmp_name in file_list:
+    cropMgr.AutoCropIrregularity_1(tmp_name)
