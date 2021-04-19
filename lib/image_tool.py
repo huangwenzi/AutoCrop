@@ -35,6 +35,81 @@ def get_row_pixel(tow_data, row):
         ret_list.append(tow_data[tmp_y][row])
     return ret_list
 
+# 获取起始处开始的有效像素行(单点扩散)
+# pos ： 起始点
+# data ： 像素数据(二维)
+def get_image_range(pos, data):
+    # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
+    pass_pos = {}
+    range_arr = [pos[0], pos[1], pos[0], pos[1]]   # 截图范围  
+    find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
+
+    while True:
+        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos)
+        # 没有新的有效像素点
+        if len(ret_pos) == 0:
+            break
+        find_pos = ret_pos
+    
+    # 范围有变化
+    if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
+        return range_arr
+    return None
+
+# 获取起始处开始的有效像素行(描边)
+# pos ： 起始点
+# data ： 像素数据(二维)
+def get_image_range_1(pos, data, row_Max, col_Max):
+    range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围
+    tmp_pos = [pos[0], pos[1]]  # 当前点
+    begin_idx = 0 # 开始的相对角度
+
+    # 检查是否有效点
+    # 是否有效点,超出图片范围
+    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_Max, col_Max):
+        return None
+
+    # 循环一周
+    while True:
+        # 主要逻辑
+        # 查找周围的有效像素点,顺序很重要
+        eff_pos = []
+        for tmp_idx in range(8):
+            # (idx+4)%8
+            around_idx = (begin_idx+tmp_idx)%8 # 周围点idx
+            tmp_around = _around_pos[around_idx]
+            check_pos = [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]]
+            # 是否有效点,超出图片范围
+            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_Max or check_pos[1] >= col_Max:
+                continue
+            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, row_Max, col_Max):
+                add_pos_info = {"pos":check_pos, "idx":around_idx}
+                eff_pos.append(add_pos_info)
+        # print(eff_pos)
+        # 如果小于等于零退出
+        if len(eff_pos) <= 0:
+            return None
+
+        # 刷新range_arr
+        if tmp_pos[0] < range_arr[0]:
+            range_arr[0] = tmp_pos[0]
+        if tmp_pos[1] < range_arr[1]:
+            range_arr[1] = tmp_pos[1]
+        if tmp_pos[0] > range_arr[2]:
+            range_arr[2] = tmp_pos[0]
+        if tmp_pos[1] > range_arr[3]:
+            range_arr[3] = tmp_pos[1]
+
+        # 查找下一个点
+        tmp_pos = eff_pos[0]["pos"]
+        begin_idx = eff_pos[0]["idx"] + 5
+        # 判断是否一周
+        if tmp_pos[0] == pos[0] and tmp_pos[1] == pos[1]:
+            break
+    
+    if range_arr[0] != range_arr[2] and range_arr[1] != range_arr[3]:
+        return range_arr
+    return None
 
 ## 检查函数
 # 判断是否有像素点
@@ -110,7 +185,7 @@ def check_pos_around(data, pass_pos, range_arr, find_pos):
             add_pos_y = tmp_pos[1]+tmp_around[1]
             key = "%d,%d"%(add_pos_x, add_pos_y)
             if key in pass_pos:
-                return
+                continue
             next_pos.append([add_pos_x, add_pos_y])
     return next_pos
 
@@ -279,82 +354,10 @@ def remove_blank_data(im1, tow_data):
 
 
 
-# 获取起始处开始的有效像素行(单点扩散)
-# pos ： 起始点
-# data ： 像素数据(二维)
-def getImageRange(pos, data):
-    # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
-    pass_pos = {}
-    range_arr = [pos[0], pos[1], pos[0], pos[1]]   # 截图范围  
-    find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
-
-    while True:
-        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos)
-        # 没有新的有效像素点
-        if len(ret_pos) == 0:
-            break
-        find_pos = ret_pos
-    
-    # 范围有变化
-    if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
-        return range_arr
-    return None
 
 
-# 获取起始处开始的有效像素行(描边)
-# pos ： 起始点
-# data ： 像素数据(二维)
-def getImageRange_1(pos, data, row_Max, col_Max):
-    range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围
-    tmp_pos = [pos[0], pos[1]]  # 当前点
-    begin_idx = 0 # 开始的相对角度
 
-    # 检查是否有效点
-    # 是否有效点,超出图片范围
-    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_Max, col_Max):
-        return None
 
-    # 循环一周
-    while True:
-        # 主要逻辑
-        # 查找周围的有效像素点,顺序很重要
-        eff_pos = []
-        for tmp_idx in range(8):
-            # (idx+4)%8
-            around_idx = (begin_idx+tmp_idx)%8 # 周围点idx
-            tmp_around = _around_pos[around_idx]
-            check_pos = [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]]
-            # 是否有效点,超出图片范围
-            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_Max or check_pos[1] >= col_Max:
-                continue
-            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, row_Max, col_Max):
-                add_pos_info = {"pos":check_pos, "idx":around_idx}
-                eff_pos.append(add_pos_info)
-        # print(eff_pos)
-        # 如果小于等于零退出
-        if len(eff_pos) <= 0:
-            return None
-
-        # 刷新range_arr
-        if tmp_pos[0] < range_arr[0]:
-            range_arr[0] = tmp_pos[0]
-        if tmp_pos[1] < range_arr[1]:
-            range_arr[1] = tmp_pos[1]
-        if tmp_pos[0] > range_arr[2]:
-            range_arr[2] = tmp_pos[0]
-        if tmp_pos[1] > range_arr[3]:
-            range_arr[3] = tmp_pos[1]
-
-        # 查找下一个点
-        tmp_pos = eff_pos[0]["pos"]
-        begin_idx = eff_pos[0]["idx"] + 5
-        # 判断是否一周
-        if tmp_pos[0] == pos[0] and tmp_pos[1] == pos[1]:
-            break
-    
-    if range_arr[0] != range_arr[2] and range_arr[1] != range_arr[3]:
-        return range_arr
-    return None
 
 
 
