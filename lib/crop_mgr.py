@@ -1,9 +1,10 @@
 from PIL import Image
-import time
 import os
 
 import lib.image_tool as imageToolMd
 import lib.file_lib as fileLibMd
+import lib.time_tool as timeToolMd
+time_tool = timeToolMd.time_tool
 
 
 # n宫格自动解析 每张图片xy对齐的场景
@@ -72,22 +73,23 @@ def AutoCrop(image_path):
         for tmp_row in row_range:
             box = [tmp_row[0], tmp_col[0], tmp_row[1], tmp_col[1]]
             save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_row[0], tmp_col[0])
+            fileLibMd.crate_dir(save_path)
             im_crop = im2.crop(box)
             im_crop.save(save_path)
     
 # 不规则切图(单点扩散)
 def auto_crop_irregularity(image_path):
-    begin_time = time.time()
     im1 = Image.open(image_path)
     im1 = im1.convert('RGBA')
-    data = im1.getdata()
-    data = list(data)
+    data = list(im1.getdata())
     data_len = len(data)
     row_max = im1.size[0]
     tow_data = imageToolMd.data_to_two_arr(data, row_max)
 
     # 遍历每个像素点
     skip_region = []    # 跳过的区域,同时也是截取的范围
+    # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
+    pass_pos = {}
     for idx in range(0,data_len):
         pos = [idx%row_max, idx//row_max]
         # 是否有效像素
@@ -96,13 +98,16 @@ def auto_crop_irregularity(image_path):
         # 跳过已有区域
         if imageToolMd.in_skip_region(pos, skip_region):
             continue
-        
-        range_arr = imageToolMd.get_image_range(pos, tow_data)
+        # 是否跳过
+        key = "%d,%d"%(pos[0],pos[1])
+        if key in pass_pos:
+            continue
+
+        range_arr = imageToolMd.get_image_range(pos, tow_data, pass_pos)
         if range_arr:
             skip_region.append(range_arr)
     
     # 保存图片
-    image_name = fileLibMd.get_file_name(image_path)
     image_name = fileLibMd.get_file_name(image_path)
     save_dir_path = "./处理完毕/%s"%(image_name)
     if not os.path.exists(save_dir_path):
@@ -111,12 +116,9 @@ def auto_crop_irregularity(image_path):
         save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
         im_crop = im1.crop(tmp_region)
         im_crop.save(save_path)
-    end_time = time.time()
-    print("auto_crop_irregularity %s consume:%f"%(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), end_time - begin_time))
 
 # 不规则切图(描边算法)
 def auto_crop_irregularity_1(image_path):
-    begin_time = time.time()
     im1 = Image.open(image_path)
     im1 = im1.convert('RGBA')
     data = im1.getdata()
@@ -133,7 +135,6 @@ def auto_crop_irregularity_1(image_path):
         # 跳过已有区域
         if imageToolMd.in_skip_region(pos, skip_region):
             continue
-        # print(pos)
         range_arr = imageToolMd.get_image_range_1(pos, tow_data, row_max, col_Max)
         if range_arr:
             skip_region.append(range_arr)
@@ -147,22 +148,12 @@ def auto_crop_irregularity_1(image_path):
         
     for tmp_region in skip_region:
         save_path = "%s/%s_%d_%d.png"%(save_dir_path, image_name, tmp_region[0], tmp_region[1])
-        print(save_path)
         if save_path == "./处理完毕/city_1/city_1_170_592.png":
             a = 1
         im_crop = im1.crop(tmp_region)
         im_crop.save(save_path)
-    end_time = time.time()
-    print("auto_crop_irregularity_1 %s consume:%f"%(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), end_time - begin_time))
 
-# 通过目录地址获取文件列表
-def get_file_name_by_dir(dirname):
-    file_list = []
-    for root, dirs, files in os.walk(dirname, topdown=False):
-        for name in files:
-            tmp_file_path = os.path.join(root, name)
-            file_list.append(tmp_file_path)
-    return file_list
+
 
 
 

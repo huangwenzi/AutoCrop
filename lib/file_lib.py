@@ -27,6 +27,25 @@ def get_file_name(path):
         begin_idx = path.rfind("/") + 1
     end_idx = path.rfind(".")
     return path[begin_idx:end_idx]
+
+# 获取文件目录
+def get_file_name(path):
+    end_idx = 0
+    if sysstr == "Windows":
+        end_idx = path.rfind("\\")
+    else:
+        end_idx = path.rfind("/")
+    
+    return path[:end_idx]
+
+# 通过目录地址获取文件列表
+def get_file_name_by_dir(dirname):
+    file_list = []
+    for root, dirs, files in os.walk(dirname, topdown=False):
+        for name in files:
+            tmp_file_path = os.path.join(root, name)
+            file_list.append(tmp_file_path)
+    return file_list
         
 ## 检查函数
 
@@ -41,5 +60,12 @@ def change_path_of_sys(path):
     else:
         return path.replace('\\', '/')
 
+# 创建目录
+def crate_dir(path):
+    path = change_path_of_sys(path)
+    path_dir = get_file_name(path)
+    # 目录是否存在
+    if path_dir != "" and not os.path.exists(path_dir):
+        os.makedirs(path_dir)
 
-    
+

@@ -38,14 +38,14 @@ def get_row_pixel(tow_data, row):
 # 获取起始处开始的有效像素行(单点扩散)
 # pos ： 起始点
 # data ： 像素数据(二维)
-def get_image_range(pos, data):
-    # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
-    pass_pos = {}
+def get_image_range(pos, data, pass_pos):
     range_arr = [pos[0], pos[1], pos[0], pos[1]]   # 截图范围  
     find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
+    row_max = len(data)
+    col_max = len(data[0])
 
     while True:
-        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos)
+        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max)
         # 没有新的有效像素点
         if len(ret_pos) == 0:
             break
@@ -59,14 +59,14 @@ def get_image_range(pos, data):
 # 获取起始处开始的有效像素行(描边)
 # pos ： 起始点
 # data ： 像素数据(二维)
-def get_image_range_1(pos, data, row_Max, col_Max):
+def get_image_range_1(pos, data, row_max, col_max):
     range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围
     tmp_pos = [pos[0], pos[1]]  # 当前点
     begin_idx = 0 # 开始的相对角度
 
     # 检查是否有效点
     # 是否有效点,超出图片范围
-    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_Max, col_Max):
+    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_max, col_max):
         return None
 
     # 循环一周
@@ -80,9 +80,9 @@ def get_image_range_1(pos, data, row_Max, col_Max):
             tmp_around = _around_pos[around_idx]
             check_pos = [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]]
             # 是否有效点,超出图片范围
-            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_Max or check_pos[1] >= col_Max:
+            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_max or check_pos[1] >= col_max:
                 continue
-            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, row_Max, col_Max):
+            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, row_max, col_max):
                 add_pos_info = {"pos":check_pos, "idx":around_idx}
                 eff_pos.append(add_pos_info)
         # print(eff_pos)
@@ -126,9 +126,9 @@ def check_pixel(pixel):
     return True
 # 判断是否有像素点(加范围判断)
 # data ： 像素数据
-def check_pixel_and_range(pixel, tmp_pos, row_Max, col_Max): 
+def check_pixel_and_range(pixel, tmp_pos, row_max, col_max): 
     # 是否有效点,超出图片范围
-    if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_Max or tmp_pos[1] >= col_Max:
+    if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_max or tmp_pos[1] >= col_max:
         return False
     # 检查像素
     return check_pixel(pixel)
@@ -154,9 +154,7 @@ def in_skip_region(pos, skip_region):
 # pass_pos ： 跳过的点
 # range_arr ： 截图范围
 # find_pos ： 需要查找的点
-def check_pos_around(data, pass_pos, range_arr, find_pos):
-    row_Max = len(data)
-    col_Max = len(data[0])
+def check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max):
     # 遍历每个需要查找的点
     next_pos = []
     for tmp_pos in find_pos:
@@ -167,18 +165,21 @@ def check_pos_around(data, pass_pos, range_arr, find_pos):
         # 加入跳过的点
         pass_pos[key] = 1
         # 检查像素是否有效
-        if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_Max, col_Max):
+        if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_max, col_max):
             continue
         
         # 刷新range_arr
+        # x
         if tmp_pos[0] < range_arr[0]:
             range_arr[0] = tmp_pos[0]
+        elif tmp_pos[0] > range_arr[2]:
+            range_arr[2] = tmp_pos[0]
+        # y
         if tmp_pos[1] < range_arr[1]:
             range_arr[1] = tmp_pos[1]
-        if tmp_pos[0] > range_arr[2]:
-            range_arr[2] = tmp_pos[0]
-        if tmp_pos[1] > range_arr[3]:
+        elif tmp_pos[1] > range_arr[3]:
             range_arr[3] = tmp_pos[1]
+
         # 遍历周围，发展下线
         for tmp_around in _around_pos:
             add_pos_x = tmp_pos[0]+tmp_around[0]
