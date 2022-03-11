@@ -108,15 +108,8 @@ def auto_crop_irregularity(image_path):
             skip_region.append(range_arr)
     
     # 保存图片
-    image_name = fileLibMd.get_file_name(image_path)
-    save_dir_path = "./处理完毕/%s"%(image_name)
-    if not os.path.exists(save_dir_path):
-        os.makedirs(save_dir_path)
-    for tmp_region in skip_region:
-        save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
-        im_crop = im1.crop(tmp_region)
-        im_crop.save(save_path)
-
+    fileLibMd.save_imaae(image_path, skip_region, im1)
+    
 # 不规则切图(描边算法)
 def auto_crop_irregularity_1(image_path):
     im1 = Image.open(image_path)
@@ -141,17 +134,8 @@ def auto_crop_irregularity_1(image_path):
     skip_region = imageToolMd.merge_image_range(skip_region)
 
     # 保存图片
-    image_name = fileLibMd.get_file_name(image_path)
-    save_dir_path = "./处理完毕/%s"%(image_name)
-    if not os.path.exists(save_dir_path):
-        os.makedirs(save_dir_path)
-        
-    for tmp_region in skip_region:
-        save_path = "%s/%s_%d_%d.png"%(save_dir_path, image_name, tmp_region[0], tmp_region[1])
-        if save_path == "./处理完毕/city_1/city_1_170_592.png":
-            a = 1
-        im_crop = im1.crop(tmp_region)
-        im_crop.save(save_path)
+    # 保存图片
+    fileLibMd.save_imaae(image_path, skip_region, im1)
 
 
 

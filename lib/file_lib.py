@@ -69,3 +69,19 @@ def crate_dir(path):
         os.makedirs(path_dir)
 
 
+def save_imaae(image_path, skip_region, im1):
+    # 保存图片
+    image_name = get_file_name(image_path)
+    save_dir_path = "./处理完毕/%s"%(image_name)
+    if not os.path.exists(save_dir_path):
+        os.makedirs(save_dir_path)
+    for tmp_region in skip_region:
+        # 范围是否有效
+        if tmp_region[0] == tmp_region[2] or tmp_region[1] == tmp_region[3]:
+            continue
+        # 跳过面积过小的图像
+        if (tmp_region[2] - tmp_region[0]) * (tmp_region[3] - tmp_region[1]) < 25*25:
+            continue
+        save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
+        im_crop = im1.crop(tmp_region)
+        im_crop.save(save_path)

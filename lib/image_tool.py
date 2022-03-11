@@ -165,6 +165,8 @@ def check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max):
         # 加入跳过的点
         pass_pos[key] = 1
         # 检查像素是否有效
+        if tmp_pos[0] >= row_max or tmp_pos[1] >= col_max:
+            continue
         if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_max, col_max):
             continue
         
