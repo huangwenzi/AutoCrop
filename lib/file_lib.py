@@ -19,17 +19,18 @@ class FileObj():
         
 ## 获取函数
 # 获取文件名
-def get_file_name(path):
+def get_file_name_and_suffix(path):
     begin_idx = 0
     if sysstr == "Windows":
         begin_idx = path.rfind("\\") + 1
     else:
         begin_idx = path.rfind("/") + 1
     end_idx = path.rfind(".")
-    return path[begin_idx:end_idx]
+
+    return path[begin_idx:end_idx], path[end_idx:]
 
 # 获取文件目录
-def get_file_name(path):
+def get_file_dir(path):
     end_idx = 0
     if sysstr == "Windows":
         end_idx = path.rfind("\\")
@@ -63,7 +64,7 @@ def change_path_of_sys(path):
 # 创建目录
 def crate_dir(path):
     path = change_path_of_sys(path)
-    path_dir = get_file_name(path)
+    path_dir = get_file_dir(path)
     # 目录是否存在
     if path_dir != "" and not os.path.exists(path_dir):
         os.makedirs(path_dir)
@@ -71,7 +72,7 @@ def crate_dir(path):
 
 def save_imaae(image_path, skip_region, im1):
     # 保存图片
-    image_name = get_file_name(image_path)
+    image_name,_suffix_name = get_file_name_and_suffix(image_path)
     save_dir_path = "./处理完毕/%s"%(image_name)
     if not os.path.exists(save_dir_path):
         os.makedirs(save_dir_path)
@@ -84,4 +85,5 @@ def save_imaae(image_path, skip_region, im1):
             continue
         save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
         im_crop = im1.crop(tmp_region)
+        im_crop = im_crop.resize((50,50))
         im_crop.save(save_path)
