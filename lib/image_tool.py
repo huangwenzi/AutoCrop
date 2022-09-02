@@ -365,13 +365,6 @@ def change_size(im, size):
 # 压缩图片
 def compress_image(path):
     im = Image.open(path)
-    if im.mode == "RGBA":
-        return compress_image_RGBA(im)
-    else:
-        im = im.convert('RGBA')
-        return compress_image_RGBA(im)
-
-def compress_image_RGBA(im):
     # 读取图片 转二维数组
     # im = im.convert('RGBA')
     data = np.asarray(im, np.uint8)
@@ -380,8 +373,9 @@ def compress_image_RGBA(im):
 
     # 计算计数
     data_2 = []
+    data_pos_2 = []
     last_pos = copy.copy(data_1[0])
-    pos_len = len(last_pos)     # 像素点数量
+    pos_len = len(last_pos)
     pos_num = 0
     pos_sum = 0
     idx = 0
@@ -390,73 +384,79 @@ def compress_image_RGBA(im):
         if util_lib.arr_same(item, last_pos):
             pos_num += 1
             if pos_num == 255:
-                last_pos[pos_len-1] = pos_num
+                data_pos_2.append(pos_num)
                 data_2.append(last_pos)
                 pos_sum += pos_num
                 pos_num = 0
                 last_pos = copy.copy(item)
         else:
-            last_pos[pos_len-1] = pos_num
+            pos_num += 1
+            data_pos_2.append(pos_num)
             pos_sum += pos_num
             data_2.append(last_pos)
-            pos_num = 1
+            pos_num = 0
             last_pos = copy.copy(item)
     # 剩余的加进去
-    last_pos[pos_len-1] = pos_num
+    data_pos_2.append(pos_num)
     data_2.append(last_pos)
     pos_sum += pos_num
     print("compress image len:%s, pos_sum:%s"%(len(data_2), pos_sum))
 
     # 转回三维
+    def_add = util_lib.get_def_list(data_1[0])
     x_len = len(data[0])
-    def_add = []
-    for item in range(pos_len):
-        def_add.append(0)
-    data_3 = util_lib.list_two_to_three(data_2, x_len, def_add)
+    data_3 = util_lib.list_up_dimension(data_2, x_len, def_add)
     
     # 返回图片
     data_4_1 = np.asarray(data_3, np.uint8)
     image = Image.fromarray(data_4_1)
-    return image
+    
+    # 像素数量转另一张图片
+    def_add = []
+    for item in range(3):
+        def_add.append(0)
+    data_pos_3 = util_lib.list_up_dimension(data_pos_2, 3, 0)
+    data_pos_4 = util_lib.list_up_dimension(data_pos_3, x_len, def_add)
+    data_pos_4_1 = np.asarray(data_pos_4, np.uint8)
+    image_pos = Image.fromarray(data_pos_4_1)
+    return image,image_pos
     
 # 解压图片
-def decompress_image(path):
+def decompress_image(path, pos_path):
     im = Image.open(path)
-    if im.mode == "RGBA":
-        return decompress_image_RGBA(im)
-
-def decompress_image_RGBA(im):
     # 逆推成原图
     # im = im.convert('RGBA')
     data = np.asarray(im, np.uint8)
-
-    # 转成对应二维数组
-    data_1 = []
-    for item in data:
-        for item_1 in item:
-            # 这是补全
-            if item_1[3] == 0:
-                continue
-            # 扩展像素点
-            pos_attr = [item_1[0], item_1[1], item_1[2], 255]
-            for item_2 in range(item_1[3]):
-                data_1.append(pos_attr)
-    print("data_1 len:%s"%(len(data_1)))
+    data_1 = util_lib.list_three_to_two(data)
     
-    # 转成对应三维数组
-    x_len = len(data[0])
+    
+    # 位置图
+    pos_im = Image.open(pos_path)
+    pos_data = np.asarray(pos_im, np.uint8)
+    pos_data_1 = util_lib.list_three_to_two(pos_data)
+    pos_data_2 = util_lib.list_down_dimension(pos_data_1)
+    
+    # 根据数量扩展
+    idx = 0
     data_2 = []
-    while True:
-        add_list = data_1[:x_len]
-        data_1 = data_1[x_len:]
-        data_2.append(add_list)
-        # 截取完了
-        if len(data_1) == 0:
-            data_2.append(add_list)
-            break
-    data_3 = np.asarray(data_2, np.uint8)
-    image = Image.fromarray(data_3)
+    add_pos = 0
+    for pos_num in pos_data_2:
+        if pos_num == 0:
+            continue
+        for item in range(pos_num):
+            add_pos += 1
+            data_2.append(copy.copy(data_1[idx]))
+        idx += 1
+    print("decompress_image add_pos:%s"%(add_pos))
+    
+    # 转对应三维数组
+    x_len = len(data[0])
+    def_add = util_lib.get_def_list(data_1[0])
+    data_3 = util_lib.list_up_dimension(data_2, x_len, def_add)
+    data_4 = np.asarray(data_3, np.uint8)
+    image = Image.fromarray(data_4)
     return image
+
 
 
 

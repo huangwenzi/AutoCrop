@@ -13,7 +13,7 @@ def arr_same(a_list, b_list):
             return False
     return True
 
-# 把三维数组变二维
+# 把三维数组变二维 针对 np arr
 def list_three_to_two(data):
     data_1 = []
     for item in data:
@@ -24,8 +24,8 @@ def list_three_to_two(data):
             data_1.append(tmp_1)
     return data_1
 
-# 把二维数组变三维
-def list_two_to_three(data, data_len, def_add):
+# list升维
+def list_up_dimension(data, data_len, def_add):
     data_1 = []
     while True:
         add_list = data[:data_len]
@@ -40,8 +40,20 @@ def list_two_to_three(data, data_len, def_add):
         data_1.append(add_list)
     return data_1
 
+# list降维
+def list_down_dimension(data):
+    data_1 = []
+    for item in data:
+        for item_1 in item:
+            data_1.append(copy.copy(item_1))
+    return data_1
 
-
+# 根据数组获取默认数组
+def get_def_list(data):
+    data_1 = []
+    for item in data:
+        data_1.append(0)
+    return data_1
 
 
 
