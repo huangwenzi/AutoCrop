@@ -1,2 +1,6 @@
 __pycache__
 /test
+/build
+/image_decompression.spec
+/dist
+/image_compress.spec

@@ -1,8 +1,16 @@
 import copy
+import time
 
+# 耗时数据
+print_time_data = {}
 
+# 添加耗时开始标志
+def set_time_begin(key):
+    print_time_data[key] = time.time()
 
-
+# 打印耗时
+def set_time_end(key):
+    print("time_consume key:%s, time:%s"%(key, time.time() - print_time_data[key]))
 
 # 两个数组是否一样
 def arr_same(a_list, b_list):

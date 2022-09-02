@@ -368,57 +368,76 @@ def compress_image(path):
     # 读取图片 转二维数组
     # im = im.convert('RGBA')
     data = np.asarray(im, np.uint8)
-    data_1 = util_lib.list_three_to_two(data)
-    print("not compress image len:%s"%(len(data_1)))
+    pos_size = len(data[0][0])
+    # util_lib.set_time_begin("compress_image list_three_to_two")
+    # data_1 = util_lib.list_three_to_two(data)
+    # util_lib.set_time_end("compress_image list_three_to_two")
+    
+    util_lib.set_time_begin("compress_image reshape")
+    data_1 = np.reshape(data,(-1,pos_size))
+    util_lib.set_time_end("compress_image reshape")
 
+    util_lib.set_time_begin("compress_image 计算计数")
     # 计算计数
     data_2 = []
     data_pos_2 = []
-    last_pos = copy.copy(data_1[0])
-    pos_len = len(last_pos)
+    # last_pos = copy.copy(data_1[0])   # copy耗时
+    last_pos = data_1[0]
     pos_num = 0
     pos_sum = 0
     idx = 0
     for item in data_1:
         idx += 1
+        pos_num += 1
         if util_lib.arr_same(item, last_pos):
-            pos_num += 1
+        # if (item == last_pos).all():  # 这个更慢
             if pos_num == 255:
                 data_pos_2.append(pos_num)
                 data_2.append(last_pos)
                 pos_sum += pos_num
                 pos_num = 0
-                last_pos = copy.copy(item)
+                last_pos = item
         else:
-            pos_num += 1
             data_pos_2.append(pos_num)
             pos_sum += pos_num
             data_2.append(last_pos)
             pos_num = 0
-            last_pos = copy.copy(item)
+            last_pos = item
     # 剩余的加进去
     data_pos_2.append(pos_num)
     data_2.append(last_pos)
     pos_sum += pos_num
-    print("compress image len:%s, pos_sum:%s"%(len(data_2), pos_sum))
+    util_lib.set_time_end("compress_image 计算计数")
 
+    util_lib.set_time_begin("compress_image 转回三维")
     # 转回三维
     def_add = util_lib.get_def_list(data_1[0])
     x_len = len(data[0])
     data_3 = util_lib.list_up_dimension(data_2, x_len, def_add)
+    util_lib.set_time_end("compress_image 转回三维")
     
+    util_lib.set_time_begin("compress_image 返回图片")
     # 返回图片
     data_4_1 = np.asarray(data_3, np.uint8)
     image = Image.fromarray(data_4_1)
+    util_lib.set_time_end("compress_image 返回图片")
     
+    util_lib.set_time_begin("compress_image 像素数量转另一张图片")
     # 像素数量转另一张图片
-    def_add = []
-    for item in range(3):
-        def_add.append(0)
-    data_pos_3 = util_lib.list_up_dimension(data_pos_2, 3, 0)
-    data_pos_4 = util_lib.list_up_dimension(data_pos_3, x_len, def_add)
-    data_pos_4_1 = np.asarray(data_pos_4, np.uint8)
+    # 填充像素
+    pos_num = len(data_2)
+    need_pos_num = pos_num // 3 + 1   # 转像素点有多少个
+    need_row_num = need_pos_num // x_len + 1  # 转行有多少行
+    need_all_pos_num = need_row_num * x_len * 3
+    for item in range(need_all_pos_num - pos_num):
+        data_pos_2.append(0)
+    # 一维数组转三维
+    data_pos_2 = np.asarray(data_pos_2, np.uint8)
+    data_pos_4_1 = data_pos_2.reshape(need_row_num,x_len,3)
     image_pos = Image.fromarray(data_pos_4_1)
+    util_lib.set_time_end("compress_image 像素数量转另一张图片")
+    print("image len:%s, compression len:%s"%(len(data_1), len(data_2)))
+    print("\n")
     return image,image_pos
     
 # 解压图片
@@ -427,34 +446,48 @@ def decompress_image(path, pos_path):
     # 逆推成原图
     # im = im.convert('RGBA')
     data = np.asarray(im, np.uint8)
-    data_1 = util_lib.list_three_to_two(data)
+    data_size = len(data[0][0])
+    util_lib.set_time_begin("decompress_image 转对应二维数组")
+    data_1 = np.reshape(data,(-1,data_size))    # 按data_size数量定一维数组的元素数量
+    util_lib.set_time_end("decompress_image 转对应二维数组")
     
     
+    util_lib.set_time_begin("decompress_image 位置图")
     # 位置图
     pos_im = Image.open(pos_path)
     pos_data = np.asarray(pos_im, np.uint8)
-    pos_data_1 = util_lib.list_three_to_two(pos_data)
-    pos_data_2 = util_lib.list_down_dimension(pos_data_1)
+    # pos_data = np.asarray(pos_im, np.uint)
+    pos_size = len(pos_data[0][0])
+    pos_data_2 = pos_data.flatten() # 遍历元素
+    util_lib.set_time_end("decompress_image 位置图")
     
+    util_lib.set_time_begin("decompress_image 根据数量扩展")
     # 根据数量扩展
     idx = 0
+    # data_2 = np.array([])
     data_2 = []
     add_pos = 0
     for pos_num in pos_data_2:
         if pos_num == 0:
             continue
+        # pos_num_arr = np.tile(data_1[idx],(1,pos_num))
+        # data_2 = np.append(data_2, pos_num_arr[0])
+        # 这居然比np快
         for item in range(pos_num):
-            add_pos += 1
-            data_2.append(copy.copy(data_1[idx]))
+            data_2.append(data_1[idx])
+        add_pos += pos_num
         idx += 1
-    print("decompress_image add_pos:%s"%(add_pos))
+    add_pos_x = data.shape[1]
+    add_pos_y = add_pos // add_pos_x
+    util_lib.set_time_end("decompress_image 根据数量扩展")
     
     # 转对应三维数组
-    x_len = len(data[0])
-    def_add = util_lib.get_def_list(data_1[0])
-    data_3 = util_lib.list_up_dimension(data_2, x_len, def_add)
-    data_4 = np.asarray(data_3, np.uint8)
-    image = Image.fromarray(data_4)
+    util_lib.set_time_begin("decompress_image 转对应三维数组")
+    data_2 = np.asarray(data_2, np.uint8)
+    data_3 = data_2.reshape(add_pos_y,add_pos_x,data_size)
+    image = Image.fromarray(data_3)
+    util_lib.set_time_end("decompress_image 转对应三维数组")
+    print("\n")
     return image
 
 
