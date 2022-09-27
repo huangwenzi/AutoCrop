@@ -37,32 +37,32 @@ def get_row_pixel(tow_data, row):
 def get_image_range(pos, data, pass_pos):
     range_arr = [pos[0], pos[1], pos[0], pos[1]]   # 截图范围  
     find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
-    row_max = len(data)
-    col_max = len(data[0])
+    y_len = len(data)
+    x_len = len(data[0])
 
     while True:
-        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max)
+        ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos, y_len, x_len)
         # 没有新的有效像素点
         if len(ret_pos) == 0:
             break
         find_pos = ret_pos
     
     # 范围有变化
-    if range_arr[0] != range_arr[2] or range_arr[1] != range_arr[3]:
+    if range_arr[0] != range_arr[2] and range_arr[1] != range_arr[3]:
         return range_arr
     return None
 
 # 获取起始处开始的有效像素行(描边)
 # pos ： 起始点
 # data ： 像素数据(二维)
-def get_image_range_1(pos, data, row_max, col_max):
+def get_image_range_1(pos, data, y_len, x_len):
     range_arr = [pos[0],pos[1],pos[0],pos[1]]   # 截图范围
     tmp_pos = [pos[0], pos[1]]  # 当前点
     begin_idx = 0 # 开始的相对角度
 
     # 检查是否有效点
     # 是否有效点,超出图片范围
-    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_max, col_max):
+    if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, y_len, x_len):
         return None
 
     # 循环一周
@@ -76,9 +76,9 @@ def get_image_range_1(pos, data, row_max, col_max):
             tmp_around = _around_pos[around_idx]
             check_pos = [tmp_pos[0]+tmp_around[0], tmp_pos[1]+tmp_around[1]]
             # 是否有效点,超出图片范围
-            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= row_max or check_pos[1] >= col_max:
+            if check_pos[0] < 0 or check_pos[1] < 0 or check_pos[0] >= y_len or check_pos[1] >= x_len:
                 continue
-            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, row_max, col_max):
+            if check_pixel_and_range(data[check_pos[0]][check_pos[1]], check_pos, y_len, x_len):
                 add_pos_info = {"pos":check_pos, "idx":around_idx}
                 eff_pos.append(add_pos_info)
         # print(eff_pos)
@@ -122,9 +122,9 @@ def check_pixel(pixel):
     return True
 # 判断是否有像素点(加范围判断)
 # data ： 像素数据
-def check_pixel_and_range(pixel, tmp_pos, row_max, col_max): 
+def check_pixel_and_range(pixel, tmp_pos, y_len, x_len): 
     # 是否有效点,超出图片范围
-    if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= row_max or tmp_pos[1] >= col_max:
+    if tmp_pos[0] < 0 or tmp_pos[1] < 0 or tmp_pos[0] >= y_len or tmp_pos[1] >= x_len:
         return False
     # 检查像素
     return check_pixel(pixel)
@@ -145,12 +145,25 @@ def in_skip_region(pos, skip_region):
             return True
     return False
 
+# 根据坐标扩大范围
+def update_pos_range(pos, range_arr):
+    # x
+    if pos[0] < range_arr[0]:
+        range_arr[0] = pos[0]
+    elif pos[0] > range_arr[2]:
+        range_arr[2] = pos[0]
+    # y
+    if pos[1] < range_arr[1]:
+        range_arr[1] = pos[1]
+    elif pos[1] > range_arr[3]:
+        range_arr[3] = pos[1]
+
 # 目标点周围的有效像素点
 # data ： 像素数据(二维)
 # pass_pos ： 跳过的点
 # range_arr ： 截图范围
 # find_pos ： 需要查找的点
-def check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max):
+def check_pos_around(data, pass_pos, range_arr, find_pos, y_len, x_len):
     # 遍历每个需要查找的点
     next_pos = []
     for tmp_pos in find_pos:
@@ -161,31 +174,22 @@ def check_pos_around(data, pass_pos, range_arr, find_pos, row_max, col_max):
         # 加入跳过的点
         pass_pos[key] = 1
         # 检查像素是否有效
-        if tmp_pos[0] >= row_max or tmp_pos[1] >= col_max:
+        if tmp_pos[0] >= y_len or tmp_pos[1] >= x_len:
             continue
-        if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, row_max, col_max):
+        if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, y_len, x_len):
             continue
         
         # 刷新range_arr
-        # x
-        if tmp_pos[0] < range_arr[0]:
-            range_arr[0] = tmp_pos[0]
-        elif tmp_pos[0] > range_arr[2]:
-            range_arr[2] = tmp_pos[0]
-        # y
-        if tmp_pos[1] < range_arr[1]:
-            range_arr[1] = tmp_pos[1]
-        elif tmp_pos[1] > range_arr[3]:
-            range_arr[3] = tmp_pos[1]
+        update_pos_range(tmp_pos, range_arr)
 
         # 遍历周围，发展下线
         for tmp_around in _around_pos:
-            add_pos_x = tmp_pos[0]+tmp_around[0]
-            add_pos_y = tmp_pos[1]+tmp_around[1]
-            key = "%d,%d"%(add_pos_x, add_pos_y)
+            add_pos_y = tmp_pos[0]+tmp_around[0]
+            add_pos_x = tmp_pos[1]+tmp_around[1]
+            key = "%d,%d"%(add_pos_y, add_pos_x)
             if key in pass_pos:
                 continue
-            next_pos.append([add_pos_x, add_pos_y])
+            next_pos.append([add_pos_y, add_pos_x])
     return next_pos
 
 # 两个范围是否有交集
@@ -210,13 +214,13 @@ def check_contact(range_1, range_2):
 ## 修改函数
 # 像素数组顺时针旋转90度
 # data ： 像素数据
-# row_max ： row数
-def pixelClockwise90(data, row_max):
+# y_len ： row数
+def pixelClockwise90(data, y_len):
     ret = []
     data_len = len(data)
     for idx in range(0, data_len):
         # 对应的位置
-        pos = (idx%row_max)*row_max + idx//row_max
+        pos = (idx%y_len)*y_len + idx//y_len
         ret.append(data[pos])
     return ret
 
@@ -224,27 +228,27 @@ def pixelClockwise90(data, row_max):
 # data ： 像素数据
 def twoArrClockwiseXY(two_data):
     ret = []
-    col_max = len(two_data)
-    row_max = len(two_data[0])
+    x_len = len(two_data)
+    y_len = len(two_data[0])
     # 行
-    for row_idx in range(0, row_max):
+    for row_idx in range(0, y_len):
         col_arr = []
         # 列
-        for col_idx in range(0, col_max):
+        for col_idx in range(0, x_len):
             col_arr.append(two_data[col_idx][row_idx])
         ret.append(col_arr)
     return ret
 
 # 像素数组转二维
 # data ： 像素数据
-# row_max ： row数
+# y_len ： row数
 # ps : 
-def data_to_two_arr(data, row_max):
+def data_to_two_arr(data, y_len):
     two_data = []
     data_len = len(data)
-    col_max = data_len//row_max
-    for idx in range(0, col_max):
-        two_data.append(data[idx*row_max : idx*row_max + row_max])
+    x_len = data_len//y_len
+    for idx in range(0, x_len):
+        two_data.append(data[idx*y_len : idx*y_len + y_len])
     # 这时拿到的是(y,x)类型
     # 进行二维数组旋转
     ret = twoArrClockwiseXY(two_data)

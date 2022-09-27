@@ -34,11 +34,11 @@ def AutoCrop(image_path):
         end_idx = imageToolMd.get_ret_pixel_idx(row_data, begin_idx, False)
         # 如果结束为空，说明到最后一行
         if end_idx == None:
-            end_idx = row_max
+            end_idx = row_max-1
             x_range.append([begin_idx, end_idx])
             break
         # 添加col范围
-        x_range.append([begin_idx, end_idx+1])
+        x_range.append([begin_idx, end_idx])
         x_idx = end_idx
         
     # 获取每一张图y占的范围
@@ -55,51 +55,47 @@ def AutoCrop(image_path):
         end_idx = imageToolMd.get_ret_pixel_idx(col_data, begin_idx, False)
         # 如果结束为空，说明到最后一行
         if end_idx == None:
-            end_idx = col_max
+            end_idx = col_max-1
             y_range.append([begin_idx, end_idx])
             break
         # 添加col范围
-        y_range.append([begin_idx, end_idx+1])
+        y_range.append([begin_idx, end_idx])
         y_idx = end_idx
 
     # 根据范围剪切
     skip_region = []
     for tmp_x in x_range:
         for tmp_y in y_range:
-            box = [tmp_x[0], tmp_y[0], tmp_x[1], tmp_y[1]]
+            box = [tmp_y[0], tmp_x[0], tmp_y[1], tmp_x[1]]
             skip_region.append(box)
     # 保存图片
     fileLibMd.save_imaae(image_path, skip_region, im1)
+
     
 # 不规则切图(单点扩散)
 def auto_crop_irregularity(image_path):
     im1 = Image.open(image_path)
     im1 = im1.convert('RGBA')
-    data = list(im1.getdata())
-    data_len = len(data)
-    row_max = im1.size[0]
-    tow_data = imageToolMd.data_to_two_arr(data, row_max)
+    tow_data = np.asarray(im1, np.uint8)
+    y_len = len(tow_data)
+    x_len = len(tow_data[0])
 
     # 遍历每个像素点
     skip_region = []    # 跳过的区域,同时也是截取的范围
     # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
     pass_pos = {}
-    for idx in range(0,data_len):
-        pos = [idx%row_max, idx//row_max]
-        # 是否有效像素
-        if not imageToolMd.check_pixel(tow_data[pos[0]][pos[1]]):
-            continue
-        # 跳过已有区域
-        if imageToolMd.in_skip_region(pos, skip_region):
-            continue
-        # 是否跳过
-        key = "%d,%d"%(pos[0],pos[1])
-        if key in pass_pos:
-            continue
-
-        range_arr = imageToolMd.get_image_range(pos, tow_data, pass_pos)
-        if range_arr:
-            skip_region.append(range_arr)
+    for tmp_y in range(0, y_len):
+        for tmp_x in range(0, x_len):
+            # 是否有效像素
+            if not imageToolMd.check_pixel(tow_data[tmp_y][tmp_x]):
+                continue
+            # 是否已找过
+            key = "%d,%d"%(tmp_y,tmp_x)
+            if key in pass_pos:
+                continue
+            range_arr = imageToolMd.get_image_range([tmp_y,tmp_x], tow_data, pass_pos)
+            if range_arr:
+                skip_region.append(range_arr)
     
     # 保存图片
     fileLibMd.save_imaae(image_path, skip_region, im1)

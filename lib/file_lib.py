@@ -83,6 +83,10 @@ def save_imaae(image_path, skip_region, im1):
         # 跳过面积过小的图像
         if (tmp_region[2] - tmp_region[0]) * (tmp_region[3] - tmp_region[1]) < 5*5:
             continue
-        save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region[0], tmp_region[1])
-        im_crop = im1.crop(tmp_region)
+        # tmp_region是[begin_y,begin_x,end_y,end_x]
+        # crop是[begin_x,begin_y,end_x,end_y]
+        tmp_region_1 = [tmp_region[1],tmp_region[0],tmp_region[3],tmp_region[2]]
+        # 保存图片
+        save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region_1[0], tmp_region_1[1])
+        im_crop = im1.crop(tmp_region_1)
         im_crop.save(save_path)
