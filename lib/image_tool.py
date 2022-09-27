@@ -26,18 +26,10 @@ def get_ret_pixel_idx(data, begin, effective):
 
 # 获取某一行的像素数组
 def get_col_pixel(tow_data, col):
-    row_len = len(tow_data)
-    ret_list = []
-    for tmp_x in range(0, row_len):
-        ret_list.append(tow_data[tmp_x][col])
-    return ret_list
+    return tow_data[:,col]
 # 获取某一列的像素数组
 def get_row_pixel(tow_data, row):
-    col_len = len(tow_data[0])
-    ret_list = []
-    for tmp_y in range(0, col_len):
-        ret_list.append(tow_data[tmp_y][row])
-    return ret_list
+    return tow_data[row,:]
 
 # 获取起始处开始的有效像素行(单点扩散)
 # pos ： 起始点
@@ -315,47 +307,47 @@ def merge_image_range(arr):
         arr = now_arr
 
 # 删除四周空白行
-def remove_blank_data(im1, tow_data):
-    row_len = len(tow_data)
-    col_len = len(tow_data[0])
+def remove_blank_data(tow_data):
+    y_len = len(tow_data)
+    x_len = len(tow_data[0])
     
     # 有效像素的行
-    new_y = 0
-    for tmp_y in range(0, col_len):
-        for tmp_x in range(0, row_len):
-            if check_pixel(tow_data[tmp_x][tmp_y]):
-                new_y = tmp_y
+    begin_y = 0
+    for tmp_y in range(0, y_len):
+        for tmp_x in range(0, x_len):
+            if check_pixel(tow_data[tmp_y][tmp_x]):
+                begin_y = tmp_y
                 break
-        if new_y > 0:
+        if begin_y > 0:
             break
-    new_y_1 = 0
-    for tmp_y in range(0, col_len):
-        tmp_y = col_len - tmp_y - 1
-        for tmp_x in range(0, row_len):
-            if check_pixel(tow_data[tmp_x][tmp_y]):
-                new_y_1 = tmp_y
+    end_y = 0
+    for tmp_y in range(0, y_len):
+        tmp_y = y_len - tmp_y - 1
+        for tmp_x in range(0, x_len):
+            if check_pixel(tow_data[tmp_y][tmp_x]):
+                end_y = tmp_y
                 break
-        if new_y_1 > 0:
+        if end_y > 0:
             break
     # 有效像素的列
-    new_x = 0
-    for tmp_x in range(0, row_len):
-        for tmp_y in range(0, col_len):
-            if check_pixel(tow_data[tmp_x][tmp_y]):
-                new_x = tmp_x
+    begin_x = 0
+    for tmp_x in range(0, x_len):
+        for tmp_y in range(0, y_len):
+            if check_pixel(tow_data[tmp_y][tmp_x]):
+                begin_x = tmp_x
                 break
-        if new_x > 0:
+        if begin_x > 0:
             break
-    new_x_1 = 0
-    for tmp_x in range(0, row_len):
-        tmp_x = row_len - tmp_x - 1
-        for tmp_y in range(0, col_len):
+    end_x = 0
+    for tmp_x in range(0, x_len):
+        tmp_x = x_len - tmp_x - 1
+        for tmp_y in range(0, y_len):
             if check_pixel(tow_data[tmp_x][tmp_y]):
-                new_x_1 = tmp_x
+                end_x = tmp_x
                 break
-        if new_x_1 > 0:
+        if end_x > 0:
             break
-    return im1.crop([new_x, new_y, new_x_1, new_y_1])
+    return tow_data[begin_y:end_y,begin_x:end_x]
                
 # 修改图片大小
 def change_size(im, size):

@@ -4,3 +4,7 @@ __pycache__
 /image_decompression.spec
 /dist
 /image_compress.spec
+/处理完毕
+/压缩(已解压)
+/压缩(已压缩)
+/压缩(需压缩)
