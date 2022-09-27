@@ -100,7 +100,7 @@ def auto_crop_irregularity(image_path):
     # 保存图片
     fileLibMd.save_imaae(image_path, skip_region, im1)
     
-# 不规则切图(描边算法)
+# 不规则切图(描边算法) 不成熟，尽量避免使用
 def auto_crop_irregularity_1(image_path):
     im1 = Image.open(image_path)
     im1 = im1.convert('RGBA')
@@ -124,39 +124,36 @@ def auto_crop_irregularity_1(image_path):
     skip_region = imageToolMd.merge_image_range(skip_region)
 
     # 保存图片
-    # 保存图片
     fileLibMd.save_imaae(image_path, skip_region, im1)
 
 
-# 不规则切图(单点扩散) 有效点保存，切的图也是不规则的
+# 不规则切图(单点扩散) 占用点保存，切的图也是不规则的  推荐
 def auto_crop_irregularity_2(image_path):
     im1 = Image.open(image_path)
     im1 = im1.convert('RGBA')
-    data = list(im1.getdata())
-    data_len = len(data)
-    row_max = im1.size[0]
-    tow_data = imageToolMd.data_to_two_arr(data, row_max)
+    tow_data = np.asarray(im1, np.uint8)
+    y_len = len(tow_data)
+    x_len = len(tow_data[0])
 
     # 遍历每个像素点
     skip_region = []    # 跳过的区域,同时也是截取的范围
-    # 已经找过的点 [x,y], {"x,y" = 1}后者比较省查找时间,前者简便
+    # 已占用的像素点
     pass_pos = {}
-    for idx in range(0,data_len):
-        pos = [idx%row_max, idx//row_max]
-        # 是否有效像素
-        if not imageToolMd.check_pixel(tow_data[pos[0]][pos[1]]):
-            continue
-        # 是否跳过
-        key = "%d,%d"%(pos[0],pos[1])
-        if key in pass_pos:
-            continue
-
-        range_arr = imageToolMd.get_image_range(pos, tow_data, pass_pos)
-        if range_arr:
-            skip_region.append(range_arr)
+    for tmp_y in range(0, y_len):
+        for tmp_x in range(0, x_len):
+            # 是否有效像素
+            if not imageToolMd.check_pixel(tow_data[tmp_y][tmp_x]):
+                continue
+            # 是否已占用
+            key = "%d,%d"%(tmp_y,tmp_x)
+            if key in pass_pos:
+                continue
+            range_arr = imageToolMd.get_image_range_2([tmp_y,tmp_x], tow_data, pass_pos)
+            if range_arr:
+                skip_region.append(range_arr)
     
     # 保存图片
-    fileLibMd.save_imaae(image_path, skip_region, im1)
+    fileLibMd.save_imaae(image_path, skip_region, im1, tow_data)
     
 
 

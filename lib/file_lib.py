@@ -1,4 +1,6 @@
 import os
+import numpy as np
+from PIL import Image
 import platform
 sysstr = platform.system()
 
@@ -70,7 +72,7 @@ def crate_dir(path):
         os.makedirs(path_dir)
 
 
-def save_imaae(image_path, skip_region, im1):
+def save_imaae(image_path, skip_region, im1, data = []):
     # 保存图片
     image_name,_suffix_name = get_file_name_and_suffix(image_path)
     save_dir_path = "./处理完毕/%s"%(image_name)
@@ -88,5 +90,25 @@ def save_imaae(image_path, skip_region, im1):
         tmp_region_1 = [tmp_region[1],tmp_region[0],tmp_region[3],tmp_region[2]]
         # 保存图片
         save_path = "./处理完毕/%s/_%d_%d.png"%(image_name, tmp_region_1[0], tmp_region_1[1])
-        im_crop = im1.crop(tmp_region_1)
-        im_crop.save(save_path)
+        # 是否有占用点
+        if len(tmp_region) >= 5:
+            # 创建占用数组
+            tmp_y = tmp_region[2] - tmp_region[0] + 1
+            tmp_x = tmp_region[3] - tmp_region[1] + 1
+            dt = []
+            for tmp_y_1 in range(tmp_y):
+                row_data = []
+                for tmp_x_1 in range(tmp_x):
+                    row_data.append([0,0,0,255])
+                dt.append(row_data)
+            # 填充占用点
+            for item in tmp_region[4]:
+                tmp_y_1 = item[0] - tmp_region[0]
+                tmp_x_1 = item[1] - tmp_region[1]
+                dt[tmp_y_1][tmp_x_1] = data[tmp_y_1 + tmp_region[0]][tmp_x_1 + tmp_region[1]]
+            dt = np.asarray(dt, dtype=np.uint8)
+            im_crop = Image.fromarray(dt)
+            im_crop.save(save_path)
+        else:
+            im_crop = im1.crop(tmp_region_1)
+            im_crop.save(save_path)

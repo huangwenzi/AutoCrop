@@ -13,7 +13,7 @@ _around_pos = [
     [+1, -1],[0, -1],
 ]
 # 背景像素误差值
-_bg_fault_val = 10
+_bg_fault_val = 5
 
 
 ## 获取函数
@@ -42,6 +42,27 @@ def get_image_range(pos, data, pass_pos):
 
     while True:
         ret_pos = check_pos_around(data, pass_pos, range_arr, find_pos, y_len, x_len)
+        # 没有新的有效像素点
+        if len(ret_pos) == 0:
+            break
+        find_pos = ret_pos
+    
+    # 范围有变化
+    if range_arr[0] != range_arr[2] and range_arr[1] != range_arr[3]:
+        return range_arr
+    return None
+
+# 获取起始处开始的有效像素行(单点扩散) 占用点保存
+# pos ： 起始点
+# data ： 像素数据(二维)
+def get_image_range_2(pos, data, pass_pos):
+    range_arr = [pos[0], pos[1], pos[0], pos[1], []]   # 截图范围 占用点列表 
+    find_pos = [pos]  # 需要查找的点 [x,y],{"x,y" = 1}
+    y_len = len(data)
+    x_len = len(data[0])
+
+    while True:
+        ret_pos = check_pos_around_2(data, pass_pos, range_arr, find_pos, y_len, x_len)
         # 没有新的有效像素点
         if len(ret_pos) == 0:
             break
@@ -178,6 +199,40 @@ def check_pos_around(data, pass_pos, range_arr, find_pos, y_len, x_len):
             continue
         if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, y_len, x_len):
             continue
+        
+        # 刷新range_arr
+        update_pos_range(tmp_pos, range_arr)
+
+        # 遍历周围，发展下线
+        for tmp_around in _around_pos:
+            add_pos_y = tmp_pos[0]+tmp_around[0]
+            add_pos_x = tmp_pos[1]+tmp_around[1]
+            key = "%d,%d"%(add_pos_y, add_pos_x)
+            if key in pass_pos:
+                continue
+            next_pos.append([add_pos_y, add_pos_x])
+    return next_pos
+
+# 目标点周围的有效像素点
+# data ： 像素数据(二维)
+# pass_pos ： 占用点
+# range_arr ： 截图范围
+# find_pos ： 需要查找的点
+def check_pos_around_2(data, pass_pos, range_arr, find_pos, y_len, x_len):
+    # 遍历每个需要查找的点
+    next_pos = []
+    for tmp_pos in find_pos:
+        # 是否跳过
+        key = "%d,%d"%(tmp_pos[0],tmp_pos[1])
+        if key in pass_pos:
+            continue
+        
+        # 检查像素是否有效
+        if not check_pixel_and_range(data[tmp_pos[0]][tmp_pos[1]], tmp_pos, y_len, x_len):
+            continue
+        # 加入占用点
+        pass_pos[key] = 1
+        range_arr[4].append(tmp_pos)
         
         # 刷新range_arr
         update_pos_range(tmp_pos, range_arr)
