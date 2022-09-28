@@ -13,7 +13,7 @@ auto_crop_irregularity_1  速度中, 太复杂图片不准确
 auto_crop_irregularity_2  速度满, 对复杂图像兼容度高，推荐  
 
 # 例如
-原图：  
-![](https://github.com/huangwenzi/AutoCrop/tree/master/activity.png)  
-切割后：  
-![](https://github.com/huangwenzi/AutoCrop/tree/master/show_2.png)  
+## 原图：  
+![](https://github.com/huangwenzi/AutoCrop/blob/master/activity.png)  
+## 切割后：  
+![](https://github.com/huangwenzi/AutoCrop/blob/master/show_2.png)  
